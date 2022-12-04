@@ -1,100 +1,155 @@
-<?php
+<h1>Страница трансфера</h1>
 
-// blockchain 
-// echo "hello blockchain1";
-echo "<pre>";
+<div class="forms-container container row row-cols-1 row-cols-md-2">
 
-// список методов ['balance','addresses','transfer','','','','']
-
-$method = $_POST['method'];
-
-
-$api = "https://apirone.com/api/v2/";
-$w_id = "btc-104e92b25b0af4f08cd70cf02d56b75e";
-$pass = "BuhsdyWTMWLLYSAOQrUcTdGi2NZXWX4T";
-
-// получаю адрес кошелька
-$_adreses = $api . "wallets/" . $w_id . "/addresses";
-$json_adreses = file_get_contents($_adreses);
-$areses_data = json_decode($json_adreses, true);
-$my_adreses = $areses_data['addresses'][0]['address'];
-$my_adreses_type = $areses_data['addresses'][0]['type'];
+    <form class="col bg-light py-3" data-form-transfer="recive">
+        <h4 class="text-dark">Оплата регистрации</h4>
+        <p class="form-text">Оплата регистрации в системе</p>
+        <div class="mb-3">
+            <label for="reciveWalletCount" class="form-label text-dark">Сумма оплаты в BTC</label>
+            <input type="number" step="0.001" class="form-control" name="reciveWalletCount" id="reciveWalletCount">
+        </div>
+        <div data-form-warning="recive" class="d-none my-3 d-flex justify-content-center text-danger border border-danger rounded py-2">
+            Не валид
+        </div>
+        <button type="submit" data-form-btn-transfer="recive" class="btn btn-primary" disabled>Оплатить</button>
+        <p id="linkReciveContainer" class="d-none mt-3 py-2 border border-success rounded text-center">
+            <a style="text-decoration: none;" data-form-link-transfer="recive" class="link-success fs-5" href="#" target="_blank">Перейти на страницу оплаты >></a>
+        </p>
+    </form>
 
 
-// баланс по адрусу полученного коелька
-$_adreses_balance = $api . "wallets/" . $w_id . "/addresses/" . $my_adreses . "/balance";
-$json_adreses_balance = file_get_contents($_adreses_balance);
-$areses_balance_data = json_decode($json_adreses_balance, true);
-// доступный баланс для вывода
-$available_balance = $areses_balance_data['available'];
+    <form class="col bg-light py-3" data-form-transfer="pay">
+        <h4 class="text-dark">Запрос выплаты</h4>
+        <p class="form-text">Вывод средств из системы себе наикошелек</p>
+        <div data-form-container>
+            <div class="mb-3">
+                <label for="payWalletAdds" class="form-label text-dark">Адрес вашего кошелька</label>
+                <input type="text" class="form-control" name="payWalletAdds" id="payWalletAdds" required>
+                <div id="payWalletAddsHelp" class="form-text">Скопируйте и вставьте уникальный хэш вашего крипто-кошелька</div>
+            </div>
+            <div class="mb-3">
+                <label for="payWalletCount" class="form-label text-dark">Сумма выплаты в BTC</label>
+                <input type="number" step="0.001" class="form-control" name="payWalletCount" id="payWalletCount">
+                <div id="payWalletAddsHelp" class="form-text">Комиссия составляет 0.99% от суммы вывода + комиссия сети около 1-го процента</div>
+                <div data-transfer-info="pay" class="d-inline-flex flex-column">
+                    <p></p>
+                </div>
+            </div>
+        </div>
+        <div data-form-warning="pay" class="d-none my-3 d-flex justify-content-center text-danger border border-danger rounded py-2">
+            Не валид
+        </div>
+        <button type="submit" data-form-btn-transfer="pay" class="btn btn-primary" disabled>Получить</button>
+    </form>
+</div>
 
-// // авторизация для получения токена
-// $url_auth = $api . 'auth/login';
+<script>
+    var count_recive = document.querySelector('#reciveWalletCount');
+    var count_pay = document.querySelector('#payWalletCount');
 
-// $request_arr = array(
-//    "login" => $w_id,
-//     "password" => $pass,
-// );
+    var adds_pay = document.querySelector('#payWalletAdds');
 
-// $request_string = json_encode($request_arr);
-// $ch = curl_init($url_auth);
-// curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-// curl_setopt($ch, CURLOPT_POSTFIELDS, $request_string);
-// curl_setopt($ch, CURLOPT_HEADER, true);
-// curl_setopt(
-//     $ch,
-//     CURLOPT_HTTPHEADER,
-//     array(
-//         'Content-Type: application/json',
-//         'charset: utf-8:'
-//     )
-// );
+    var forms_transfer = document.querySelectorAll('[data-form-transfer]');
+    let text_btn_res = '';
 
-// $result_auth = curl_exec($ch);
-// curl_close($ch);
+    // 
+    forms_transfer.forEach(element => {
+        element.addEventListener('submit', e => {
+            e.preventDefault();
+            // console.log(element.dataset.formTransfer);
+            document.querySelector(`[data-form-btn-transfer="${element.dataset.formTransfer}"]`).setAttribute('disabled', 'disabled');
+            document.querySelector(`[data-form-btn-transfer="${element.dataset.formTransfer}"]`).innerHTML = `<div class="d-flex px-4 justify-content-center">
+            <div style="font-size: 10px;width: 20px;height: 20px;" class="spinner-border text-light" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+            </div></div>`;
 
-// выплата
-//https://apirone.com/api/v2/wallets/{wallet}/transfer
+            // document.querySelector(`[data-form-transfer="${element.dataset.formTransfer}"]`).serialize();
+            let data = $(`[data-form-transfer="${element.dataset.formTransfer}"]`).serialize();
+            // console.log('data');
+            // console.log(data);
+            if (element.dataset.formTransfer == 'recive') {
+                text_btn_res = 'Оплатить';
+            } else if (element.dataset.formTransfer == 'pay') {
+                text_btn_res = 'Получить';
 
-// $_adreses_balance = $api . "wallets/" . $w_id . "/transfer/" . $my_adreses . "/balance";
-// $json_adreses_balance = file_get_contents($_adreses_balance);
-// $areses_balance_data = json_decode($json_adreses_balance, true);
-// авторизация для получения токена
-$url_transfer = $api . 'wallets/' . $w_id . '/transfer';
+            }
 
-$request_arr = array(
-    "transfer_key" => $pass,
-    "addresses" => [$my_adreses],
-    "destinations" => [array(
-        "address" => "3HmjxAZwoWjsJd8mig89qfn2rzFtxXYW4z",
-        "amount" => 400000
-    )],
-    "fee" => "normal",
-    "subtract-fee-from-amount" => false
-);
+            reciveGo(element.dataset.formTransfer, data);
+        })
+    });
 
-$request_string = json_encode($request_arr);
-$ch = curl_init($url_transfer);
-curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $request_string);
-curl_setopt($ch, CURLOPT_HEADER, false);
-curl_setopt(
-    $ch,
-    CURLOPT_HTTPHEADER,
-    array(
-        'Content-Type: application/json'
-    )
-);
+    function reciveGo(formTransfer, data) {
+        $.ajax({
+            type: "post",
+            url: "/" + formTransfer,
+            data: data,
+            success: function(res) {
+                document.querySelector(`[data-form-btn-transfer="${formTransfer}"]`).innerHTML = text_btn_res;
+                document.querySelector('#reciveWalletCount').value = '';
 
-$data_transfer = curl_exec($ch);
-curl_close($ch);
+                console.log(res);
+                let resData = JSON.parse(res);
+                console.log(resData);
 
-$data_transfer = json_decode($data_transfer, true);
+                switch (resData.code) {
+                    case 200:
+                        if (resData.type === "receiving") {
+                            document.querySelector(`#linkReciveContainer`).classList.remove('d-none');
+                            document.querySelector(`[data-form-link-transfer="recive"]`).setAttribute('href', resData.linkPay);
+
+                            document.querySelector(`[data-form-btn-transfer="recive"]`).classList.add('d-none');
+                        } else if (resData.type === "pay") {
+                            document.querySelector(`[data-form-container]`).classList.add('d-none');
+                        }
 
 
-print_r($data_transfer['message']);
+                        break;
+
+                    case 500:
+                        document.querySelector(`[data-form-warning="${formTransfer}"]`).classList.remove('d-none');
+                        document.querySelector(`[data-form-warning="${formTransfer}"]`).textContent = "Ошибка, попробуйте позже";
+                        break;
+                    case 505:
+                        document.querySelector(`[data-form-warning="${formTransfer}"]`).classList.remove('d-none');
+                        document.querySelector(`[data-form-warning="${formTransfer}"]`).textContent = "Сумма должна быть больше 0";
+                        break;
+                    case 507:
+                        document.location.href='/'
+                        break;
+                }
 
 
+            }
+        });
+    }
 
-// https://bots.online-lead.store/_test-script/bitcoin_pay/index.php
+    //вывод
+    count_pay.addEventListener('input', e => {
+        if (count_pay.value > 0) {
+            document.querySelector('[data-form-btn-transfer="pay"]').removeAttribute('disabled');
+        } else if (count_pay.value < 0) {
+            count_pay.value = 0;
+            document.querySelector('[data-form-btn-transfer="pay"]').setAttribute('disabled', 'disabled');
+        } else if (count_pay.value == 0 || count_pay.value === 0) {
+            document.querySelector('[data-form-btn-transfer="pay"]').setAttribute('disabled', 'disabled');
+        }
+
+        let count_fee = (Number(count_pay.value) / 100) * 2;
+        document.querySelector('#payWalletAddsHelp_count').textContent = Number(count_pay.value) - Number(count_fee);
+    })
+
+    //оплата
+    count_recive.addEventListener('input', e => {
+        if (count_recive.value > 0) {
+            document.querySelector('[data-form-btn-transfer="recive"]').removeAttribute('disabled');
+        } else if (count_recive.value < 0) {
+            count_recive.value = 0;
+            document.querySelector('[data-form-btn-transfer="recive"]').setAttribute('disabled', 'disabled');
+        } else if (count_recive.value == 0 || count_recive.value === 0) {
+            document.querySelector('[data-form-btn-transfer="recive"]').setAttribute('disabled', 'disabled');
+        }
+        let count_fee = (Number(count_recive.value) / 100) * 2;
+
+    });
+</script>
